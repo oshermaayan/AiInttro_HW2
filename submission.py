@@ -70,7 +70,7 @@ def betterEvaluationFunction(gameState):
     The GameState class is defined in pacman.py and you might want to look into that for other helper methods.
     """
     vicinityDistance = 3
-    eps = 10e-3
+    eps = 10e-4
     pacmanPosition = gameState.getPacmanPosition()
     evalValue = 0.0
     evalValue += gameState.getScore()
