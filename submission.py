@@ -1,5 +1,6 @@
 import random, util
 from game import Agent
+from util import manhattanDistance
 
 #     ********* Reflex agent- sections a and b *********
 class ReflexAgent(Agent):
@@ -37,8 +38,9 @@ class ReflexAgent(Agent):
     and returns a number, where higher numbers are better.
     """
     successorGameState = currentGameState.generatePacmanSuccessor(action)
-    return scoreEvaluationFunction(successorGameState)
-
+    #return scoreEvaluationFunction(successorGameState)
+    #Use the better evaluation function instead
+    return betterEvaluationFunction(successorGameState)
 
 #     ********* Evaluation functions *********
 
@@ -52,21 +54,82 @@ def scoreEvaluationFunction(gameState):
 ######################################################################################
 # b: implementing a better heuristic function
 def betterEvaluationFunction(gameState):
-  """
+    """
 
-  The betterEvaluationFunction takes in a GameState (pacman.py) and should return a number, where higher numbers are better.
+    The betterEvaluationFunction takes in a GameState (pacman.py) and should return a number, where higher numbers are better.
 
-  A GameState specifies the full game state, including the food, capsules, agent configurations and more.
-  Following are a few of the helper methods that you can use to query a GameState object to gather information about
-  the present state of Pac-Man, the ghosts and the maze:
+    A GameState specifies the full game state, including the food, capsules, agent configurations and more.
+    Following are a few of the helper methods that you can use to query a GameState object to gather information about
+    the present state of Pac-Man, the ghosts and the maze:
 
-  gameState.getLegalActions():
-  gameState.getPacmanState():
-  gameState.getGhostStates():
-  gameState.getNumAgents():
-  gameState.getScore():
-  The GameState class is defined in pacman.py and you might want to look into that for other helper methods.
-  """
+    gameState.getLegalActions():
+    gameState.getPacmanState():
+    gameState.getGhostStates():
+    gameState.getNumAgents():
+    gameState.getScore():
+    The GameState class is defined in pacman.py and you might want to look into that for other helper methods.
+    """
+    vicinityDistance = 3
+    eps = 10e-3
+    pacmanPosition = gameState.getPacmanPosition()
+    evalValue = 0.0
+    evalValue += gameState.getScore()
+
+    #Food-related parameters
+    numOfNearFood = 0
+    currentFoodGrid = gameState.getFood().data
+    gridRows = len(currentFoodGrid)#currentFoodGrid.height
+    gridCols = len(currentFoodGrid[0])
+
+    for row in range(gridRows):
+        for col in range(gridCols):
+            if currentFoodGrid[row][col]==True:
+                #Square has food
+                foodPos = (row,col)
+                if manhattanDistance(pacmanPosition,foodPos) <= vicinityDistance:
+                        numOfNearFood += 1
+
+
+    if gameState.getNumFood() < 5:
+        #Encourage moving towards food towards the end of the game
+            evalValue += 10*numOfNearFood
+    else:
+        evalValue += numOfNearFood
+
+    evalValue -= gameState.getNumFood()#= 1/(gameState.getNumFood()+eps) # Number of food items left
+
+    #Ghost-related information
+    nearThreatGhostsNum = 0
+    nearThreatGhostsScore = 0.0
+    nearScaredGhostsNum = 0
+    nearScaredGhostsScore = 0.0
+
+    for ghostPos, ghostState in zip(gameState.getGhostPositions(), gameState.getGhostStates()):
+        distanceFromGhost = manhattanDistance(pacmanPosition, ghostPos)
+        if distanceFromGhost <= vicinityDistance:
+            if ghostState.scaredTimer > 0:
+                nearScaredGhostsNum += 1
+                nearScaredGhostsScore += 1/(distanceFromGhost + eps) # maybe remove and use num instead?
+            else:
+                #Ghost is a threat to Pacman :O
+                nearThreatGhostsNum +=1
+                nearThreatGhostsScore += 1/(distanceFromGhost + eps)
+
+    evalValue -= 1000*nearThreatGhostsScore ### Play with coefficent
+    evalValue += nearScaredGhostsScore
+
+    # Capsules information
+    capsulesPositions = gameState.getCapsules()
+    nearCapsulesNum = 0
+
+    if nearThreatGhostsNum > 0:
+        for capsulePos in capsulesPositions:
+            if manhattanDistance(pacmanPosition,capsulePos) < vicinityDistance:
+                nearCapsulesNum +=1
+
+    evalValue += 1000*nearCapsulesNum
+
+    return evalValue
 
 #     ********* MultiAgent Search Agents- sections c,d,e,f*********
 
