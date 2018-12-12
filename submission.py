@@ -1,6 +1,7 @@
-import random, util
-from game import Agent
+import random, util, math
+from game import Agent, Directions
 from util import manhattanDistance
+from pacman import GameState
 
 #     ********* Reflex agent- sections a and b *********
 class ReflexAgent(Agent):
@@ -73,7 +74,25 @@ def betterEvaluationFunction(gameState):
     eps = 10e-4
     pacmanPosition = gameState.getPacmanPosition()
     evalValue = 0.0
-    evalValue += gameState.getScore()
+    evalValue += gameState.getScore() ### Change scales of coeffs
+
+
+    #Walls related
+    wallsGrid = gameState.getWalls().data
+    wallGridRows = len(wallsGrid)  # currentFoodGrid.height
+    wallGridCols = len(wallsGrid[0])
+    surroundingWallNum = 0
+    for row in range(wallGridRows):
+        for col in range(wallGridCols):
+            if wallsGrid[row][col]==True:
+                #Square has wall
+                foodPos = (row,col)
+                if manhattanDistance(pacmanPosition,foodPos) <= 1:
+                    surroundingWallNum += 1
+
+    #if surroundingWallNum == 3:
+        #Surrounded by walls
+        #evalValue += -100
 
     #Food-related parameters
     numOfNearFood = 0
@@ -115,7 +134,7 @@ def betterEvaluationFunction(gameState):
                 nearThreatGhostsNum +=1
                 nearThreatGhostsScore += 1/(distanceFromGhost + eps)
 
-    evalValue -= 1000*nearThreatGhostsScore ### Play with coefficent
+    evalValue -= 100*nearThreatGhostsScore ### Play with coefficent 100/10000/...
     evalValue += nearScaredGhostsScore
 
     # Capsules information
@@ -127,7 +146,7 @@ def betterEvaluationFunction(gameState):
             if manhattanDistance(pacmanPosition,capsulePos) < vicinityDistance:
                 nearCapsulesNum +=1
 
-    evalValue += 1000*nearCapsulesNum
+    evalValue += 100*nearCapsulesNum
 
     return evalValue
 
@@ -157,48 +176,103 @@ class MultiAgentSearchAgent(Agent):
 # c: implementing minimax
 
 class MinimaxAgent(MultiAgentSearchAgent):
-  """
-    Your minimax agent
-  """
-
-  def getAction(self, gameState):
     """
-      Returns the minimax action from the current gameState using self.depth
-      and self.evaluationFunction. Terminal states can be found by one of the following:
-      pacman won, pacman lost or there are no legal moves.
+    Your minimax agent
+    """
+    """
+        Returns the minimax action from the current gameState using self.depth
+        and self.evaluationFunction. Terminal states can be found by one of the following:
+        pacman won, pacman lost or there are no legal moves.
 
-      Here are some method calls that might be useful when implementing minimax.
+        Here are some method calls that might be useful when implementing minimax.
 
-      gameState.getLegalActions(agentIndex):
+        gameState.getLegalActions(agentIndex):
         Returns a list of legal actions for an agent
         agentIndex=0 means Pacman, ghosts are >= 1
 
-      Directions.STOP:
+        Directions.STOP:
         The stop direction
 
-      gameState.generateSuccessor(agentIndex, action):
+        gameState.generateSuccessor(agentIndex, action):
         Returns the successor game state after an agent takes an action
 
-      gameState.getNumAgents():
+        gameState.getNumAgents():
         Returns the total number of agents in the game
 
-      gameState.getScore():
+        gameState.getScore():
         Returns the score corresponding to the current state of the game
 
-      gameState.isWin():
+        gameState.isWin():
         Returns True if it's a winning state
 
-      gameState.isLose():
+        gameState.isLose():
         Returns True if it's a losing state
 
-      self.depth:
+        self.depth:
         The depth to which search should continue
 
-    """
+        """
 
-    # BEGIN_YOUR_CODE
-    raise Exception("Not implemented yet")
-    # END_YOUR_CODE
+    def getAction(self, gameState):
+        '''Returns one of the following actions: North, South, East, West, Stop'''
+        # Call recursive auxilary function
+        # start with Pacman - agent #0
+        return self.getActionAux(gameState, self.index, self.depth)
+
+
+    def getActionAux(self, gameState, agent, depth):
+        if self.isFinalState(gameState):
+            return gameState.getScore()
+
+        if depth == 0:
+            return self.evaluationFunction(gameState)
+
+        numOfAgents = gameState.getNumAgents()
+        legalActions = gameState.getLegalActions(agent)
+        nextAgent = (agent + 1) % numOfAgents
+
+        if agent == self.index:
+            #Pacman's turn
+            # Initializing values
+            bestMaxScore = -math.inf
+            wantedMove = Directions.STOP
+
+            for action in legalActions:
+                nextState = gameState.generateSuccessor(agent,action)
+                '''Note: depth is decreased at PACMAN's turn'''
+                score = self.getActionAux(nextState, nextAgent, depth)
+                if score > bestMaxScore:
+                    bestMaxScore = score
+                    wantedMove = action
+
+            # If we're at the root of the game tree - returned the preferred move
+            # else - return the score
+            if depth == self.depth:
+                return wantedMove
+            else:
+                return bestMaxScore
+        else:
+            #Ghost (min player)
+            bestMinScore = math.inf # best score for the min_agent is the lowest score
+            for action in legalActions:
+                nextState = gameState.generateSuccessor(agent, action)
+                if nextAgent == self.index:
+                    #This is the last ghost's turn, next turn is Pacman's
+                    if depth == 1: ### maybe 1?
+                        #Next states are leaves (we've reached the maximum depth)
+                        score = self.evaluationFunction(nextState)
+                    else:
+                        score = self.getActionAux(nextState, nextAgent, depth - 1)
+                else:
+                    score = self.getActionAux(nextState, nextAgent, depth)
+
+                bestMinScore = min(bestMinScore, score)
+                return bestMinScore
+
+    def isFinalState(self, gameState):
+        pacmanLegalAction = gameState.getLegalActions()
+        return gameState.isLose() or gameState.isWin() or len(pacmanLegalAction)==0
+
 
 ######################################################################################
 # d: implementing alpha-beta
