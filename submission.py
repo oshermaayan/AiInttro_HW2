@@ -172,6 +172,10 @@ class MultiAgentSearchAgent(Agent):
     self.evaluationFunction = util.lookup(evalFn, globals())
     self.depth = int(depth)
 
+  def isFinalState(self, gameState):
+    pacmanLegalAction = gameState.getLegalActions()
+    return gameState.isLose() or gameState.isWin() or len(pacmanLegalAction)==0
+
 ######################################################################################
 # c: implementing minimax
 
@@ -237,20 +241,21 @@ class MinimaxAgent(MultiAgentSearchAgent):
             bestMaxScore = -math.inf
             wantedMove = Directions.STOP
 
-            for action in legalActions:
-                nextState = gameState.generateSuccessor(agent,action)
-                '''Note: depth is decreased at PACMAN's turn'''
-                score = self.getActionAux(nextState, nextAgent, depth)
-                if score > bestMaxScore:
-                    bestMaxScore = score
-                    wantedMove = action
+
+            actions = [action for action in legalActions]
+            nextStates = [gameState.generateSuccessor(agent, action) for action in actions]
+            scores = [self.getActionAux(state, nextAgent, depth) for state in nextStates]
+            bestScore = max(scores)
+            bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+            chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+            wantedMove = actions[chosenIndex]
 
             # If we're at the root of the game tree - returned the preferred move
             # else - return the score
             if depth == self.depth:
                 return wantedMove
             else:
-                return bestMaxScore
+                return bestScore
         else:
             #Ghost (min player)
             bestMinScore = math.inf # best score for the min_agent is the lowest score
@@ -269,9 +274,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
                 bestMinScore = min(bestMinScore, score)
                 return bestMinScore
 
-    def isFinalState(self, gameState):
-        pacmanLegalAction = gameState.getLegalActions()
-        return gameState.isLose() or gameState.isWin() or len(pacmanLegalAction)==0
 
 
 ######################################################################################
@@ -286,10 +288,80 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
       Returns the minimax action using self.depth and self.evaluationFunction
     """
+    '''Returns one of the following actions: North, South, East, West, Stop'''
+    # Call recursive auxilary function
+    # start with Pacman - agent #0
+    return self.getActionAux(gameState, self.index, self.depth, -math.inf, math.inf)
 
-    # BEGIN_YOUR_CODE
-    raise Exception("Not implemented yet")
-    # END_YOUR_CODE
+
+  def getActionAux(self, gameState, agent, depth, alpha, beta):
+        if self.isFinalState(gameState):
+            return gameState.getScore()
+
+        if depth == 0:
+            return self.evaluationFunction(gameState)
+
+        numOfAgents = gameState.getNumAgents()
+
+        if agent == 0:
+            legalActions = gameState.getLegalPacmanActions()
+        else:
+            legalActions = gameState.getLegalActions(agent)
+
+        nextAgent = (agent + 1) % numOfAgents
+
+        if agent == self.index:
+            #Pacman's turn
+            # Initializing values
+            bestMaxScore = -math.inf
+            wantedMove = Directions.STOP
+
+
+            wantedMoves=[]
+            for action in legalActions:
+                nextState = gameState.generateSuccessor(agent,action)
+                '''Note: depth is decreased at Ghost's turn'''
+                ###Osher - notice the last line
+                score = self.getActionAux(nextState, nextAgent, depth, alpha, beta)
+                if score > bestMaxScore:
+                    bestMaxScore = score
+                    wantedMoves = [action]
+                if score == bestMaxScore:
+                    wantedMoves.append(action)
+                alpha = max(alpha, bestMaxScore)
+                if alpha >= beta:
+                    return math.inf
+            # If we're at the root of the game tree - returned the preferred move
+            # else - return the score
+            if depth == self.depth:
+                bestIndices = [index for index in range(len(wantedMoves))]
+                return wantedMoves[random.choice(bestIndices)]
+            else:
+                return bestMaxScore
+        else:
+            #Ghost (min player)
+            bestMinScore = math.inf # best score for the min_agent is the lowest score
+            changed = False
+            for action in legalActions:
+                nextState = gameState.generateSuccessor(agent, action)
+                if nextAgent == self.index:
+                    #This is the last ghost's turn, next turn is Pacman's
+                    if depth == 1: ### maybe 1?
+                        #Next states are leaves (we've reached the maximum depth)
+                        score = self.evaluationFunction(nextState)
+                    else:
+                        score = self.getActionAux(nextState, nextAgent, depth - 1, alpha, beta)
+                else:
+                    score = self.getActionAux(nextState, nextAgent, depth, alpha, beta)
+                if score != -math.inf:
+                    bestMinScore = min(bestMinScore, score)
+                    changed = True
+                    beta = min(bestMinScore, beta)
+                if alpha >= beta:
+                    return -math.inf
+            if not changed:
+                return -math.inf
+            return bestMinScore
 
 ######################################################################################
 # e: implementing random expectimax
