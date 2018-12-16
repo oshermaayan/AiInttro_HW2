@@ -272,7 +272,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
                     score = self.getActionAux(nextState, nextAgent, depth)
 
                 bestMinScore = min(bestMinScore, score)
-                return bestMinScore
+            return bestMinScore
 
 
 
@@ -376,10 +376,58 @@ class RandomExpectimaxAgent(MultiAgentSearchAgent):
       Returns the expectimax action using self.depth and self.evaluationFunction
       All ghosts should be modeled as choosing uniformly at random from their legal moves.
     """
+    return self.getActionAux(gameState, self.index, self.depth)
 
-    # BEGIN_YOUR_CODE
-    raise Exception("Not implemented yet")
-    # END_YOUR_CODE
+  def getActionAux(self, gameState, agent, depth):
+        if self.isFinalState(gameState):
+            return gameState.getScore()
+
+        if depth == 0:
+            return self.evaluationFunction(gameState)
+
+        numOfAgents = gameState.getNumAgents()
+        legalActions = gameState.getLegalActions(agent)
+        nextAgent = (agent + 1) % numOfAgents
+
+        actions = [action for action in legalActions]
+        nextStates = [gameState.generateSuccessor(agent, action) for action in actions]
+
+
+
+        if agent == self.index:
+            # Pacman's turn
+            # Initializing values
+            bestMaxScore = -math.inf
+            wantedMove = Directions.STOP
+
+            scores = [self.getActionAux(state, nextAgent, depth) for state in nextStates]
+            bestScore = max(scores)
+            bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+            chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+            wantedMove = actions[chosenIndex]
+
+            # If we're at the root of the game tree - returned the preferred move
+            # else - return the score
+            if depth == self.depth:
+                return wantedMove
+            else:
+                return bestScore
+        else:
+            # Ghost (min player) - randomGhost
+            totalScore = 0  # best score for the min_agent is the lowest score
+            for state in nextStates:
+                if nextAgent == self.index:
+                    # This is the last ghost's turn, next turn is Pacman's
+                    if depth == 1:  ### maybe 1?
+                        # Next states are leaves (we've reached the maximum depth)
+                        totalScore += self.evaluationFunction(state)
+                    else:
+                        totalScore += self.getActionAux(state, nextAgent, depth - 1)
+                else:
+                    totalScore += self.getActionAux(state, nextAgent, depth)
+
+            return totalScore/nextStates.__len__()
+
 
 ######################################################################################
 # f: implementing directional expectimax
