@@ -227,7 +227,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
     def getActionAux(self, gameState, agent, depth):
         if self.isFinalState(gameState):
             return gameState.getScore()
-
         if depth == 0:
             return self.evaluationFunction(gameState)
 
@@ -241,14 +240,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
             bestMaxScore = -math.inf
             wantedMove = Directions.STOP
 
-
-            actions = [action for action in legalActions]
-            nextStates = [gameState.generateSuccessor(agent, action) for action in actions]
+            ###actions = [action for action in legalActions]
+            nextStates = [gameState.generateSuccessor(agent, action) for action in legalActions]
             scores = [self.getActionAux(state, nextAgent, depth) for state in nextStates]
             bestScore = max(scores)
             bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
             chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
-            wantedMove = actions[chosenIndex]
+            wantedMove = legalActions[chosenIndex]
 
             # If we're at the root of the game tree - returned the preferred move
             # else - return the score
@@ -302,21 +300,14 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             return self.evaluationFunction(gameState)
 
         numOfAgents = gameState.getNumAgents()
-
-        if agent == 0:
-            legalActions = gameState.getLegalPacmanActions()
-        else:
-            legalActions = gameState.getLegalActions(agent)
-
         nextAgent = (agent + 1) % numOfAgents
+        legalActions = gameState.getLegalActions(agent)
 
         if agent == self.index:
             #Pacman's turn
             # Initializing values
             bestMaxScore = -math.inf
             wantedMove = Directions.STOP
-
-
             wantedMoves=[]
             for action in legalActions:
                 nextState = gameState.generateSuccessor(agent,action)
@@ -327,9 +318,11 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     bestMaxScore = score
                     wantedMoves = [action]
                 if score == bestMaxScore:
+                    # Enable move selection from several moves with the best score
                     wantedMoves.append(action)
                 alpha = max(alpha, bestMaxScore)
-                if alpha >= beta:
+                if bestMaxScore >= beta: ## Osher: changed from alpha >= beta
+                    ### Osher: check if this is the check we need - does Beta hold the right value?
                     return math.inf
             # If we're at the root of the game tree - returned the preferred move
             # else - return the score
@@ -357,9 +350,11 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     bestMinScore = min(bestMinScore, score)
                     changed = True
                     beta = min(bestMinScore, beta)
-                if alpha >= beta:
+                if alpha >= bestMinScore: ### Osher: changed from alpha >= beta
+                    ### Same check as for max agent
                     return -math.inf
             if not changed:
+                ### Osher: why do we need this if statement?
                 return -math.inf
             return bestMinScore
 
@@ -386,13 +381,11 @@ class RandomExpectimaxAgent(MultiAgentSearchAgent):
             return self.evaluationFunction(gameState)
 
         numOfAgents = gameState.getNumAgents()
-        legalActions = gameState.getLegalActions(agent)
         nextAgent = (agent + 1) % numOfAgents
+        legalActions = gameState.getLegalActions(agent)
 
-        actions = [action for action in legalActions]
-        nextStates = [gameState.generateSuccessor(agent, action) for action in actions]
-
-
+        ###actions = [action for action in legalActions]
+        nextStates = [gameState.generateSuccessor(agent, action) for action in legalActions]
 
         if agent == self.index:
             # Pacman's turn
@@ -404,7 +397,7 @@ class RandomExpectimaxAgent(MultiAgentSearchAgent):
             bestScore = max(scores)
             bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
             chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
-            wantedMove = actions[chosenIndex]
+            wantedMove = legalActions[chosenIndex]
 
             # If we're at the root of the game tree - returned the preferred move
             # else - return the score
@@ -425,8 +418,8 @@ class RandomExpectimaxAgent(MultiAgentSearchAgent):
                         totalScore += self.getActionAux(state, nextAgent, depth - 1)
                 else:
                     totalScore += self.getActionAux(state, nextAgent, depth)
-
-            return totalScore/nextStates.__len__()
+            assert len(nextStates) != 0 ### Just for sanity check
+            return totalScore/len(nextStates)
 
 
 ######################################################################################
