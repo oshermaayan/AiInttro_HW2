@@ -70,6 +70,10 @@ def betterEvaluationFunction(gameState):
     gameState.getScore():
     The GameState class is defined in pacman.py and you might want to look into that for other helper methods.
     """
+    # TODO: Maybe encourage finishing areas with little food first?
+    # Todo: play with coeffs
+    # Todo: change distances from constants to grid-size dependent variables
+    #
     vicinityDistance = 3
     eps = 10e-4
     pacmanPosition = gameState.getPacmanPosition()
@@ -321,7 +325,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     # Enable move selection from several moves with the best score
                     wantedMoves.append(action)
                 alpha = max(alpha, bestMaxScore)
-                if bestMaxScore >= beta: ## Osher: changed from alpha >= beta
+                if alpha >= beta: ## Osher: changed from alpha >= beta
                     ### Osher: check if this is the check we need - does Beta hold the right value?
                     return math.inf
             # If we're at the root of the game tree - returned the preferred move
@@ -350,7 +354,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     bestMinScore = min(bestMinScore, score)
                     changed = True
                     beta = min(bestMinScore, beta)
-                if alpha >= bestMinScore: ### Osher: changed from alpha >= beta
+                if alpha >= beta: ### Osher: changed from alpha >= beta
                     ### Same check as for max agent
                     return -math.inf
             if not changed:
