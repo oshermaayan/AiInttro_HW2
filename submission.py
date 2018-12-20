@@ -2,6 +2,7 @@ import random, util, math
 from game import Agent, Directions
 from util import manhattanDistance
 from pacman import GameState
+from ghostAgents import DirectionalGhost
 
 #     ********* Reflex agent- sections a and b *********
 class ReflexAgent(Agent):
@@ -430,19 +431,73 @@ class RandomExpectimaxAgent(MultiAgentSearchAgent):
 # f: implementing directional expectimax
 
 class DirectionalExpectimaxAgent(MultiAgentSearchAgent):
-  """
-    Your expectimax agent
-  """
-
-  def getAction(self, gameState):
     """
-      Returns the expectimax action using self.depth and self.evaluationFunction
-      All ghosts should be modeled as using the DirectionalGhost distribution to choose from their legal moves.
+    Y   our expectimax agent
     """
 
-    # BEGIN_YOUR_CODE
-    raise Exception("Not implemented yet")
-    # END_YOUR_CODE
+    def getAction(self, gameState):
+        """
+          Returns the expectimax action using self.depth and self.evaluationFunction
+          All ghosts should be modeled as using the DirectionalGhost distribution to choose from their legal moves.
+        """
+        return self.getActionAux(gameState, self.index, self.depth)
+
+    def getActionAux(self, gameState, agent, depth):
+        if self.isFinalState(gameState):
+            return gameState.getScore()
+
+        if depth == 0:
+            return self.evaluationFunction(gameState)
+
+        numOfAgents = gameState.getNumAgents()
+        nextAgent = (agent + 1) % numOfAgents
+        legalActions = gameState.getLegalActions(agent)
+
+        ###actions = [action for action in legalActions]
+        nextStates = [gameState.generateSuccessor(agent, action) for action in legalActions]
+
+        if agent == self.index:
+            # Pacman's turn
+            # Initializing values
+            bestMaxScore = -math.inf
+            wantedMove = Directions.STOP
+
+            scores = [self.getActionAux(state, nextAgent, depth) for state in nextStates]
+            bestScore = max(scores)
+            bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+            chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+            wantedMove = legalActions[chosenIndex]
+
+            # If we're at the root of the game tree - returned the preferred move
+            # else - return the score
+            if depth == self.depth:
+                return wantedMove
+            else:
+                return bestScore
+        else:
+            # Ghost (min player) - randomGhost
+            totalScore = 0  # best score for the min_agent is the lowest score
+            ghostHelper = DirectionalGhost(agent)
+            ghostDist = ghostHelper.getDistribution(gameState)
+
+            prob_sum = 0
+            ###Add normalization
+            for action, state in zip(legalActions, nextStates):
+                if nextAgent == self.index:
+                    # This is the last ghost's turn, next turn is Pacman's
+                    if depth == 1:  ### maybe 1?
+                        # Next states are leaves (we've reached the maximum depth)
+                        totalScore += self.evaluationFunction(state)*ghostDist[action]
+                        prob_sum += ghostDist[action]
+                    else:
+                        totalScore += self.getActionAux(state, nextAgent, depth - 1)*ghostDist[action]
+                        prob_sum += ghostDist[action]
+                else:
+                    totalScore += self.getActionAux(state, nextAgent, depth)*ghostDist[action]
+                    prob_sum += ghostDist[action]
+            assert prob_sum == 1
+            assert prob_sum != 0  ### Just for sanity check
+            return totalScore / prob_sum
 
 
 ######################################################################################
