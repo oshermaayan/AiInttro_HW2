@@ -74,7 +74,10 @@ def betterEvaluationFunction(gameState):
     # Todo: play with coeffs
     # Todo: change distances from constants to grid-size dependent variables
     #
-    vicinityDistance = 3
+    Grid = gameState.getWalls().data
+    GridRows = len(Grid)  # currentFoodGrid.height
+    GridCols = len(Grid[0])
+    vicinityDistance = max(GridRows,GridCols)/(4*len(gameState.getGhostPositions()))
     eps = 10e-4
     pacmanPosition = gameState.getPacmanPosition()
     evalValue = 0.0
@@ -82,6 +85,7 @@ def betterEvaluationFunction(gameState):
 
 
     #Walls related
+    '''
     wallsGrid = gameState.getWalls().data
     wallGridRows = len(wallsGrid)  # currentFoodGrid.height
     wallGridCols = len(wallsGrid[0])
@@ -90,32 +94,39 @@ def betterEvaluationFunction(gameState):
         for col in range(wallGridCols):
             if wallsGrid[row][col]==True:
                 #Square has wall
-                foodPos = (row,col)
-                if manhattanDistance(pacmanPosition,foodPos) <= 1:
+                wallPos = (row,col)
+                if manhattanDistance(pacmanPosition,wallPos) <= 1:
                     surroundingWallNum += 1
 
     #if surroundingWallNum == 3:
         #Surrounded by walls
         #evalValue += -100
-
+    '''
     #Food-related parameters
     numOfNearFood = 0
     currentFoodGrid = gameState.getFood().data
     gridRows = len(currentFoodGrid)#currentFoodGrid.height
     gridCols = len(currentFoodGrid[0])
 
+    nearestFoodDist = math.inf
     for row in range(gridRows):
         for col in range(gridCols):
             if currentFoodGrid[row][col]==True:
                 #Square has food
-                foodPos = (row,col)
-                if manhattanDistance(pacmanPosition,foodPos) <= vicinityDistance:
+                foodPos = (row, col)
+                currentFoodDist = manhattanDistance(pacmanPosition,foodPos)
+                if currentFoodDist < nearestFoodDist:
+                    nearestFoodDist = currentFoodDist
+                if currentFoodDist <= vicinityDistance:
                         numOfNearFood += 1
 
+    if nearestFoodDist == 0:
+        nearestFoodDist = 1
 
+    evalValue += 10 / (nearestFoodDist)
     if gameState.getNumFood() < 5:
         #Encourage moving towards food towards the end of the game
-            evalValue += 10*numOfNearFood
+        evalValue += 10*numOfNearFood
     else:
         evalValue += numOfNearFood
 
@@ -138,7 +149,7 @@ def betterEvaluationFunction(gameState):
                 nearThreatGhostsNum +=1
                 nearThreatGhostsScore += 1/(distanceFromGhost + eps)
 
-    evalValue -= 100*nearThreatGhostsScore ### Play with coefficent 100/10000/...
+    evalValue -= 10*nearThreatGhostsScore ### Play with coefficent 100/10000/...
     evalValue += nearScaredGhostsScore
 
     # Capsules information
