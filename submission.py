@@ -6,43 +6,42 @@ from ghostAgents import DirectionalGhost
 
 #     ********* Reflex agent- sections a and b *********
 class ReflexAgent(Agent):
-  """
+    """
     A reflex agent chooses an action at each choice point by examining
     its alternatives via a state evaluation function.
-  """
-  def __init__(self):
-    self.lastPositions = []
-    self.dc = None
-
-
-  def getAction(self, gameState):
     """
-    getAction chooses among the best options according to the evaluation function.
+    def __init__(self):
+        self.lastPositions = []
+        self.dc = None
+        self.number_of_actions = 0
+        self.total_actions_time = 0.0
 
-    getAction takes a GameState and returns some Directions.X for some X in the set {North, South, West, East, Stop}
-    ------------------------------------------------------------------------------
-    """
-    # Collect legal moves and successor states
-    legalMoves = gameState.getLegalActions()
+    def getAction(self, gameState):
+        """
+        getAction chooses among the best options according to the evaluation function.
 
-    # Choose one of the best actions
-    scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
-    bestScore = max(scores)
-    bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
-    chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+        getAction takes a GameState and returns some Directions.X for some X in the set {North, South, West, East, Stop}
+        ------------------------------------------------------------------------------
+        """
+        # Collect legal moves and successor states
+        legalMoves = gameState.getLegalActions()
 
+        # Choose one of the best actions
+        scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+        bestScore = max(scores)
+        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+        return legalMoves[chosenIndex]
 
-    return legalMoves[chosenIndex]
-
-  def evaluationFunction(self, currentGameState, action):
-    """
-    The evaluation function takes in the current GameState (pacman.py) and the proposed action
-    and returns a number, where higher numbers are better.
-    """
-    successorGameState = currentGameState.generatePacmanSuccessor(action)
-    #return scoreEvaluationFunction(successorGameState)
-    #Use the better evaluation function instead
-    return betterEvaluationFunction(successorGameState)
+    def evaluationFunction(self, currentGameState, action):
+        """
+        The evaluation function takes in the current GameState (pacman.py) and the proposed action
+        and returns a number, where higher numbers are better.
+        """
+        successorGameState = currentGameState.generatePacmanSuccessor(action)
+        #return scoreEvaluationFunction(successorGameState)
+        #Use the better evaluation function instead
+        return betterEvaluationFunction(successorGameState)
 
 #     ********* Evaluation functions *********
 
@@ -356,7 +355,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     changed = True
                     beta = min(bestMinScore, beta)
                 if alpha >= beta: ### Osher: changed from alpha >= beta
-                    ### Same check as for max agent
                     return -math.inf
             if not changed:
                 ### Osher: why do we need this if statement?
