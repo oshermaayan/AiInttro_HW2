@@ -1,4 +1,4 @@
-import random, util, math
+import random, util, math, time
 from game import Agent, Directions
 from util import manhattanDistance
 from pacman import GameState
@@ -24,6 +24,7 @@ class ReflexAgent(Agent):
         ------------------------------------------------------------------------------
         """
         # Collect legal moves and successor states
+        start = time.time()
         legalMoves = gameState.getLegalActions()
 
         # Choose one of the best actions
@@ -31,6 +32,10 @@ class ReflexAgent(Agent):
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+        end = time.time()
+        duration = end-start
+        self.total_actions_time += duration
+        self.number_of_actions += 1
         return legalMoves[chosenIndex]
 
     def evaluationFunction(self, currentGameState, action):
@@ -77,7 +82,7 @@ def betterEvaluationFunction(gameState):
     Grid = gameState.getWalls().data
     GridRows = len(Grid)  # currentFoodGrid.height
     GridCols = len(Grid[0])
-    vicinityDistance = max(GridRows,GridCols)/(4*len(gameState.getGhostPositions()))
+    vicinityDistance = min(GridRows,GridCols)/(4*len(gameState.getGhostPositions()))
     eps = 10e-4
     pacmanPosition = gameState.getPacmanPosition()
     evalValue = 0.0
@@ -120,17 +125,19 @@ def betterEvaluationFunction(gameState):
                 if currentFoodDist <= vicinityDistance:
                         numOfNearFood += 1
 
-    if nearestFoodDist == 0:
-        nearestFoodDist = 1
 
-    evalValue += 10 / (nearestFoodDist)
+
+    ###evalValue += 10 / (nearestFoodDist)
     if gameState.getNumFood() < 5:
+        evalValue += 10 * numOfNearFood
+        evalValue += 100 / (nearestFoodDist)
         #Encourage moving towards food towards the end of the game
-        evalValue += 10*numOfNearFood
     else:
         evalValue += numOfNearFood
+        evalValue += 10 / (nearestFoodDist)
 
-    evalValue -= gameState.getNumFood()#= 1/(gameState.getNumFood()+eps) # Number of food items left
+    if gameState.getNumFood() >0:
+        evalValue = evalValue/gameState.getNumFood()#= 1/(gameState.getNumFood()+eps) # Number of food items left
 
     #Ghost-related information
     nearThreatGhostsNum = 0
@@ -186,6 +193,9 @@ class MultiAgentSearchAgent(Agent):
     self.index = 0 # Pacman is always agent index 0
     self.evaluationFunction = util.lookup(evalFn, globals())
     self.depth = int(depth)
+    self.number_of_actions = 0
+    self.total_actions_time = 0.0
+
 
   def isFinalState(self, gameState):
     pacmanLegalAction = gameState.getLegalActions()
@@ -236,7 +246,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
         '''Returns one of the following actions: North, South, East, West, Stop'''
         # Call recursive auxilary function
         # start with Pacman - agent #0
-        return self.getActionAux(gameState, self.index, self.depth)
+        start_time = time.time()
+        action = self.getActionAux(gameState, self.index, self.depth)
+        end_time = time.time()
+        action_duration = (end_time-start_time)
+        self.total_actions_time += action_duration
+        self.number_of_actions +=1
+        return action
 
 
     def getActionAux(self, gameState, agent, depth):
@@ -304,7 +320,13 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     '''Returns one of the following actions: North, South, East, West, Stop'''
     # Call recursive auxilary function
     # start with Pacman - agent #0
-    return self.getActionAux(gameState, self.index, self.depth, -math.inf, math.inf)
+    start_time = time.time()
+    action = self.getActionAux(gameState, self.index, self.depth, -math.inf, math.inf)
+    end_time = time.time()
+    action_duration = (end_time - start_time)
+    self.total_actions_time += action_duration
+    self.number_of_actions += 1
+    return action
 
 
   def getActionAux(self, gameState, agent, depth, alpha, beta):
@@ -385,7 +407,13 @@ class RandomExpectimaxAgent(MultiAgentSearchAgent):
       Returns the expectimax action using self.depth and self.evaluationFunction
       All ghosts should be modeled as choosing uniformly at random from their legal moves.
     """
-    return self.getActionAux(gameState, self.index, self.depth)
+    start_time = time.time()
+    action = self.getActionAux(gameState, self.index, self.depth)
+    end_time = time.time()
+    action_duration = (end_time - start_time)
+    self.total_actions_time += action_duration
+    self.number_of_actions += 1
+    return action
 
   def getActionAux(self, gameState, agent, depth):
         if self.isFinalState(gameState):
@@ -449,7 +477,13 @@ class DirectionalExpectimaxAgent(MultiAgentSearchAgent):
           Returns the expectimax action using self.depth and self.evaluationFunction
           All ghosts should be modeled as using the DirectionalGhost distribution to choose from their legal moves.
         """
-        return self.getActionAux(gameState, self.index, self.depth)
+        start_time = time.time()
+        action = self.getActionAux(gameState, self.index, self.depth)
+        end_time = time.time()
+        action_duration = (end_time - start_time)
+        self.total_actions_time += action_duration
+        self.number_of_actions += 1
+        return action
 
     def getActionAux(self, gameState, agent, depth):
         if self.isFinalState(gameState):
