@@ -550,13 +550,85 @@ class CompetitionAgent(MultiAgentSearchAgent):
 
   def getAction(self, gameState):
     """
-      Returns the action using self.depth and self.evaluationFunction
-
+      Returns the minimax action using self.depth and self.evaluationFunction
     """
+    '''Returns one of the following actions: North, South, East, West, Stop'''
+    # Call recursive auxilary function
+    # start with Pacman - agent #0
+    start_time = time.time()
+    self.depth = min(self.depth, 4)
+    action = self.getActionAux(gameState, self.index, self.depth, -math.inf, math.inf)
+    end_time = time.time()
+    action_duration = (end_time - start_time)
+    self.total_actions_time += action_duration
+    self.number_of_actions += 1
+    return action
 
-    # BEGIN_YOUR_CODE
-    raise Exception("Not implemented yet")
-    # END_YOUR_CODE
+
+  def getActionAux(self, gameState, agent, depth, alpha, beta):
+        if self.isFinalState(gameState):
+            return gameState.getScore()
+
+        if depth == 0:
+            return self.evaluationFunction(gameState)
+
+        numOfAgents = gameState.getNumAgents()
+        nextAgent = (agent + 1) % numOfAgents
+        legalActions = gameState.getLegalActions(agent)
+
+        if agent == self.index:
+            #Pacman's turn
+            # Initializing values
+            bestMaxScore = -math.inf
+            wantedMove = Directions.STOP
+            wantedMoves=[]
+            for action in legalActions:
+                nextState = gameState.generateSuccessor(agent,action)
+                '''Note: depth is decreased at Ghost's turn'''
+                ###Osher - notice the last line
+                score = self.getActionAux(nextState, nextAgent, depth, alpha, beta)
+                if score > bestMaxScore:
+                    bestMaxScore = score
+                    wantedMoves = [action]
+                if score == bestMaxScore:
+                    # Enable move selection from several moves with the best score
+                    wantedMoves.append(action)
+                alpha = max(alpha, bestMaxScore)
+                if alpha >= beta: ## Osher: changed from alpha >= beta
+                    ### Osher: check if this is the check we need - does Beta hold the right value?
+                    return math.inf
+            # If we're at the root of the game tree - returned the preferred move
+            # else - return the score
+            if depth == self.depth:
+                bestIndices = [index for index in range(len(wantedMoves))]
+                return wantedMoves[random.choice(bestIndices)]
+            else:
+                return bestMaxScore
+        else:
+            #Ghost (min player)
+            bestMinScore = math.inf # best score for the min_agent is the lowest score
+            changed = False
+            for action in legalActions:
+                nextState = gameState.generateSuccessor(agent, action)
+                if nextAgent == self.index:
+                    #This is the last ghost's turn, next turn is Pacman's
+                    if depth == 1: ### maybe 1?
+                        #Next states are leaves (we've reached the maximum depth)
+                        score = self.evaluationFunction(nextState)
+                    else:
+                        score = self.getActionAux(nextState, nextAgent, depth - 1, alpha, beta)
+                else:
+                    score = self.getActionAux(nextState, nextAgent, depth, alpha, beta)
+                if score != -math.inf:
+                    bestMinScore = min(bestMinScore, score)
+                    changed = True
+                    beta = min(bestMinScore, beta)
+                if alpha >= beta: ### Osher: changed from alpha >= beta
+                    return -math.inf
+            if not changed:
+                ### Osher: why do we need this if statement?
+                return -math.inf
+            return bestMinScore
 
 
 
