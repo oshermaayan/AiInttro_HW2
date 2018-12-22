@@ -380,15 +380,10 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                         score = self.getActionAux(nextState, nextAgent, depth - 1, alpha, beta)
                 else:
                     score = self.getActionAux(nextState, nextAgent, depth, alpha, beta)
-                if score != -math.inf:
-                    bestMinScore = min(bestMinScore, score)
-                    changed = True
-                    beta = min(bestMinScore, beta)
-                if alpha >= beta: ### Osher: changed from alpha >= beta
+                bestMinScore = min(bestMinScore, score)
+                beta = min(bestMinScore, beta)
+                if alpha > beta: ### Osher: changed from alpha >= beta
                     return -math.inf
-            if not changed:
-                ### Osher: why do we need this if statement?
-                return -math.inf
             return bestMinScore
 
 ######################################################################################
