@@ -78,56 +78,47 @@ def betterEvaluationFunction(gameState):
     # TODO: Maybe encourage finishing areas with little food first?
     # Todo: play with coeffs
     # Todo: change distances from constants to grid-size dependent variables
-    #
     Grid = gameState.getWalls().data
     GridRows = len(Grid)  # currentFoodGrid.height
     GridCols = len(Grid[0])
-    vicinityDistance = min(GridRows, GridCols) / (4 * len(gameState.getGhostPositions()))
+    #vicinityDistance = max(GridRows, GridCols) / 4
+    vicinityDistance = 3
     eps = 10e-4
     pacmanPosition = gameState.getPacmanPosition()
     evalValue = 0.0
     evalValue += gameState.getScore()  ### Change scales of coeffs
 
     # Walls related
-    '''
     wallsGrid = gameState.getWalls().data
     wallGridRows = len(wallsGrid)  # currentFoodGrid.height
     wallGridCols = len(wallsGrid[0])
     surroundingWallNum = 0
     for row in range(wallGridRows):
         for col in range(wallGridCols):
-            if wallsGrid[row][col]==True:
-                #Square has wall
-                wallPos = (row,col)
-                if manhattanDistance(pacmanPosition,wallPos) <= 1:
+            if wallsGrid[row][col] == True:
+                # Square has wall
+                foodPos = (row, col)
+                if manhattanDistance(pacmanPosition, foodPos) <= 1:
                     surroundingWallNum += 1
-    #if surroundingWallNum == 3:
-        #Surrounded by walls
-        #evalValue += -100
-    '''
+
+    # if surroundingWallNum == 3:
+    # Surrounded by walls
+    # evalValue += -100
+
     # Food-related parameters
     numOfNearFood = 0
     currentFoodGrid = gameState.getFood().data
     gridRows = len(currentFoodGrid)  # currentFoodGrid.height
     gridCols = len(currentFoodGrid[0])
 
-    nearestFoodDist = math.inf
     for row in range(gridRows):
         for col in range(gridCols):
             if currentFoodGrid[row][col] == True:
                 # Square has food
                 foodPos = (row, col)
-                currentFoodDist = manhattanDistance(pacmanPosition, foodPos)
-                if currentFoodDist < nearestFoodDist:
-                    nearestFoodDist = currentFoodDist
-                ###added and currentFoodDist>1
-                if currentFoodDist <= vicinityDistance and currentFoodDist>1:
+                if manhattanDistance(pacmanPosition, foodPos) <= vicinityDistance:
                     numOfNearFood += 1
 
-    if nearestFoodDist == 0:
-        nearestFoodDist = 1
-
-    ###evalValue += 10 / (nearestFoodDist)
     if gameState.getNumFood() < 5:
         # Encourage moving towards food towards the end of the game
         evalValue += 10 * numOfNearFood
@@ -153,7 +144,7 @@ def betterEvaluationFunction(gameState):
                 nearThreatGhostsNum += 1
                 nearThreatGhostsScore += 1 / (distanceFromGhost + eps)
 
-    evalValue -= 10 * nearThreatGhostsScore  ### Play with coefficent 100/10000/...
+    evalValue -= 100 * nearThreatGhostsScore  ### Play with coefficent 100/10000/...
     evalValue += nearScaredGhostsScore
 
     # Capsules information
@@ -551,7 +542,6 @@ class CompetitionAgent(MultiAgentSearchAgent):
     # Call recursive auxilary function
     # start with Pacman - agent #0
     start_time = time.time()
-    self.depth = min(self.depth, 4)
     action = self.getActionAux(gameState, self.index, self.depth, -math.inf, math.inf)
     end_time = time.time()
     action_duration = (end_time - start_time)
@@ -614,15 +604,10 @@ class CompetitionAgent(MultiAgentSearchAgent):
                         score = self.getActionAux(nextState, nextAgent, depth - 1, alpha, beta)
                 else:
                     score = self.getActionAux(nextState, nextAgent, depth, alpha, beta)
-                if score != -math.inf:
-                    bestMinScore = min(bestMinScore, score)
-                    changed = True
-                    beta = min(bestMinScore, beta)
-                if alpha >= beta: ### Osher: changed from alpha >= beta
+                bestMinScore = min(bestMinScore, score)
+                beta = min(bestMinScore, beta)
+                if alpha > beta: ### Osher: changed from alpha >= beta
                     return -math.inf
-            if not changed:
-                ### Osher: why do we need this if statement?
-                return -math.inf
             return bestMinScore
 
 
