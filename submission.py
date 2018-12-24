@@ -542,7 +542,8 @@ class CompetitionAgent(MultiAgentSearchAgent):
     # Call recursive auxilary function
     # start with Pacman - agent #0
     start_time = time.time()
-    action = self.getActionAux(gameState, self.index, self.depth, -math.inf, math.inf)
+    depth = min(self.depth, 4)
+    action = self.getActionAux(gameState, self.index, depth, -math.inf, math.inf)
     end_time = time.time()
     action_duration = (end_time - start_time)
     self.total_actions_time += action_duration
