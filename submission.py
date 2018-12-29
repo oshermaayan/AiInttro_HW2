@@ -346,8 +346,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     # Enable move selection from several moves with the best score
                     wantedMoves.append(action)
                 alpha = max(alpha, bestMaxScore)
-                if alpha >= beta: ## Osher: changed from alpha >= beta
-                    ### Osher: check if this is the check we need - does Beta hold the right value?
+                if alpha >= beta:
                     return math.inf
             # If we're at the root of the game tree - returned the preferred move
             # else - return the score
@@ -373,7 +372,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     score = self.getActionAux(nextState, nextAgent, depth, alpha, beta)
                 bestMinScore = min(bestMinScore, score)
                 beta = min(bestMinScore, beta)
-                if alpha > beta: ### Osher: changed from alpha >= beta
+                if alpha > beta:
                     return -math.inf
             return bestMinScore
 
@@ -580,8 +579,7 @@ class CompetitionAgent(MultiAgentSearchAgent):
                     # Enable move selection from several moves with the best score
                     wantedMoves.append(action)
                 alpha = max(alpha, bestMaxScore)
-                if alpha >= beta: ## Osher: changed from alpha >= beta
-                    ### Osher: check if this is the check we need - does Beta hold the right value?
+                if alpha > beta:
                     return math.inf
             # If we're at the root of the game tree - returned the preferred move
             # else - return the score
@@ -598,8 +596,7 @@ class CompetitionAgent(MultiAgentSearchAgent):
                 nextState = gameState.generateSuccessor(agent, action)
                 if nextAgent == self.index:
                     #This is the last ghost's turn, next turn is Pacman's
-                    if depth == 1: ### maybe 1?
-                        #Next states are leaves (we've reached the maximum depth)
+                    if depth == 1:
                         score = self.evaluationFunction(nextState)
                     else:
                         score = self.getActionAux(nextState, nextAgent, depth - 1, alpha, beta)
